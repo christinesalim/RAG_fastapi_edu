@@ -64,3 +64,22 @@ FastAPI automatically generates interactive API documentation:
 
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
+
+## Key Takeaways
+
+Run the parser test: /opt/anaconda3/bin/python test_parser.py
+
+1. Factory Pattern - One interface to get the right parser: ParserFactory.get_parser('pdf')
+2. Dual approach for PDFs:
+
+- First tries direct text extraction (faster)
+- Falls back to OCR for scanned PDFs (slower but works on images)
+
+3. PyMuPDF vs PyPDF2:
+
+- PyPDF2: Text extraction from digital PDFs
+- PyMuPDF (fitz): Converts PDF pages to images for OCR
+
+4. OCR pipeline: PDF → Image (pixmap) → PIL Image → Tesseract → Text
+
+The OCR result shows some character recognition quirks (like "Il" instead of "II"), which is typical for OCR - it's not perfect but gets most of the text!
