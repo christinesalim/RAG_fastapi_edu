@@ -83,3 +83,17 @@ Run the parser test: /opt/anaconda3/bin/python test_parser.py
 4. OCR pipeline: PDF → Image (pixmap) → PIL Image → Tesseract → Text
 
 The OCR result shows some character recognition quirks (like "Il" instead of "II"), which is typical for OCR - it's not perfect but gets most of the text!
+
+# Database Schema
+
+![Database Schema](images/schema.png)
+
+files table: holds data for each file
+
+file_chunks table: breaks table into chunks and embeddings for 1536-dimensional vector (OpenAI embedding size)
+
+## Why break files into chunks?
+
+- Large files are split into smaller chunks
+- Each chunk gets an embedding
+- Enables semantic search on smaller pieces
