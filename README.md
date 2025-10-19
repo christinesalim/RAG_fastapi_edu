@@ -12,23 +12,25 @@ The system uses a Retrieval-Augmented Generation (RAG) pattern with:
 
 ## The Complete Flow
 
+```
 User uploads file
-↓
+       ↓
 FastAPI receives it
-↓
+       ↓
 Parse file (text/PDF)
-↓
+       ↓
 Save to database (files table)
-↓
+       ↓
 Background task: chunk_and_embed (async, doesn't block)
-↓
+       ↓
 User gets immediate response
-↓
+       ↓
 Later: Background task finishes
-↓
+       ↓
 Chunks saved to database (file_chunks table)
-↓
+       ↓
 User can now search/ask questions
+```
 
 ## Setup
 
@@ -228,23 +230,24 @@ file_chunks table: breaks file contents into chunks and embeddings for 1536-dime
 
 ## Complete Flow
 
+```
 User uploads file (obama.txt)
-↓
+       ↓
 File saved to database
-
-- file_name: "obama.txt"
-- file_content: "Barack Obama was..." ← Full text
-  ↓
-  TextProcessor reads file.file_content
-  ↓
-  Splits content into sentences
-  ↓
-  Groups sentences into chunks
-  ↓
-  Each chunk saved to file_chunks table
-- chunk_text: "Barack Obama was..." ← Piece of content
-- embedding_vector: [0.023, -0.009, ...]
-- file_id: Links back to parent file
+  • file_name: "obama.txt"
+  • file_content: "Barack Obama was..." (Full text)
+       ↓
+TextProcessor reads file.file_content
+       ↓
+Splits content into sentences
+       ↓
+Groups sentences into chunks
+       ↓
+Each chunk saved to file_chunks table
+  • chunk_text: "Barack Obama was..." (Piece of content)
+  • embedding_vector: [0.023, -0.009, ...]
+  • file_id: Links back to parent file
+```
 
 ## Pydantic models
 
