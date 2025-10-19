@@ -49,11 +49,13 @@ uvicorn main:app --reload
 ## API Endpoints
 
 ### `GET /`
+
 **List all uploaded files**
 
 Returns a list of all files stored in the database.
 
 **Response:**
+
 ```json
 [
   {
@@ -68,6 +70,7 @@ Returns a list of all files stored in the database.
 ```
 
 **Example:**
+
 ```bash
 curl http://localhost:8000/
 ```
@@ -75,15 +78,18 @@ curl http://localhost:8000/
 ---
 
 ### `POST /uploadfile/`
+
 **Upload and process a document**
 
 Uploads a file (.txt or .pdf), parses its content, saves it to the database, and schedules background processing to chunk and embed the content.
 
 **Request:**
+
 - Form data with `file` field
 - Supported formats: `.txt`, `.pdf`
 
 **Response:**
+
 ```json
 {
   "info": "File saved",
@@ -92,25 +98,30 @@ Uploads a file (.txt or .pdf), parses its content, saves it to the database, and
 ```
 
 **Example:**
+
 ```bash
 curl -X POST 'http://localhost:8000/uploadfile/' \
   -F 'file=@document.pdf'
 ```
 
 **Errors:**
+
 - `400` - No file provided or file type not allowed
 - `500` - Error saving or processing file
 
 ---
 
 ### `POST /find-similar-chunks/{file_id}`
+
 **Find semantically similar chunks**
 
 Retrieves the top 10 most relevant text chunks from a specific file based on semantic similarity to the question.
 
 **Request:**
+
 - Path parameter: `file_id` (integer)
 - JSON body:
+
 ```json
 {
   "question": "What is the main topic?"
@@ -118,6 +129,7 @@ Retrieves the top 10 most relevant text chunks from a specific file based on sem
 ```
 
 **Response:**
+
 ```json
 [
   {
@@ -132,6 +144,7 @@ Retrieves the top 10 most relevant text chunks from a specific file based on sem
 ```
 
 **Example:**
+
 ```bash
 curl -X POST 'http://localhost:8000/find-similar-chunks/1' \
   -H 'Content-Type: application/json' \
@@ -141,11 +154,13 @@ curl -X POST 'http://localhost:8000/find-similar-chunks/1' \
 ---
 
 ### `POST /ask/`
+
 **Ask a question with RAG (Retrieval-Augmented Generation)**
 
 Answers questions about a document by combining vector similarity search with GPT-3.5-turbo. Retrieves relevant chunks and uses them as context for the LLM.
 
 **Request:**
+
 ```json
 {
   "document_id": 1,
@@ -154,6 +169,7 @@ Answers questions about a document by combining vector similarity search with GP
 ```
 
 **Response:**
+
 ```json
 {
   "response": "Barack Obama was born in Hawaii in 1961."
@@ -161,6 +177,7 @@ Answers questions about a document by combining vector similarity search with GP
 ```
 
 **Example:**
+
 ```bash
 curl -X POST 'http://localhost:8000/ask/' \
   -H 'Content-Type: application/json' \
@@ -171,6 +188,7 @@ curl -X POST 'http://localhost:8000/ask/' \
 ```
 
 **How it works:**
+
 1. Converts question to embedding vector
 2. Finds top 10 similar chunks using L2 distance
 3. Combines chunks into context
@@ -185,8 +203,6 @@ curl -X POST 'http://localhost:8000/ask/' \
 # Edit .env file and replace with your actual API key
 OPENAI_API_KEY=your_openai_api_key_here
 ```
-
-**Important:** Never commit your actual API key to version control. The `.env` file is already in `.gitignore`.
 
 ## API Documentation
 
@@ -228,7 +244,7 @@ file_chunks table: breaks file contents into chunks and embeddings for 1536-dime
 - Each chunk gets an embedding
 - Enables semantic search on smaller pieces
 
-## Complete Flow
+## File Upload and Chunking Flow
 
 ```
 User uploads file (obama.txt)
@@ -249,11 +265,98 @@ Each chunk saved to file_chunks table
   • file_id: Links back to parent file
 ```
 
-## Pydantic models
+## Pydantic Models
 
-Pydantic models are used to define the shape and type of data the endpoints expect
+Pydantic models are used to define the shape and type of data the endpoints expect. They provide automatic validation, serialization, and documentation for API requests.
 
-- They define the fields expected and data types for these fields
+### QuestionModel
+
+Used by the `/find-similar-chunks/{file_id}` endpoint to accept a question for similarity search.
+
+```python
+class QuestionModel(BaseModel):
+    question: str
+```
+
+**Fields:**
+- `question` (str, required) - The question text to search for similar chunks
+
+**Example Request:**
+```json
+{
+  "question": "Where was Obama born?"
+}
+```
+
+**Usage:**
+```bash
+curl -X POST 'http://localhost:8000/find-similar-chunks/1' \
+  -H 'Content-Type: application/json' \
+  -d '{"question": "Where was Obama born?"}'
+```
+
+---
+
+### AskModel
+
+Used by the `/ask/` endpoint for RAG-based question answering.
+
+```python
+class AskModel(BaseModel):
+    document_id: int
+    question: str
+```
+
+**Fields:**
+- `document_id` (int, required) - The ID of the uploaded file to search in
+- `question` (str, required) - The question to answer using the document context
+
+**Example Request:**
+```json
+{
+  "document_id": 1,
+  "question": "Where was Obama born?"
+}
+```
+
+**Usage:**
+```bash
+curl -X POST 'http://localhost:8000/ask/' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "document_id": 1,
+    "question": "Where was Obama born?"
+  }'
+```
+
+---
+
+### Benefits of Pydantic Models
+
+1. **Automatic Validation** - FastAPI automatically validates incoming data against the model schema
+2. **Type Safety** - Ensures data types are correct (e.g., `document_id` must be an integer)
+3. **Auto-generated Documentation** - Models appear in Swagger UI at http://localhost:8000/docs
+4. **Clear Error Messages** - Returns helpful 422 validation errors if data is invalid
+5. **IDE Support** - Provides autocomplete and type hints in your code editor
+
+**Example Validation Error:**
+```bash
+# Missing required field
+curl -X POST 'http://localhost:8000/ask/' \
+  -H 'Content-Type: application/json' \
+  -d '{"document_id": 1}'
+
+# Response: 422 Unprocessable Entity
+{
+  "detail": [
+    {
+      "loc": ["body", "question"],
+      "msg": "field required",
+      "type": "value_error.missing"
+    }
+  ]
+}
+```
 
 ## Testing
 
@@ -279,12 +382,14 @@ or with Anaconda Python:
 ### Test Coverage
 
 **Background Tasks:**
+
 - Text chunking with NLTK
 - OpenAI embedding creation
 - Database storage of chunks
 - Edge cases (empty text, special characters)
 
 **API Endpoints:**
+
 - File listing (`GET /`)
 - File upload (`POST /uploadfile/`)
 - Question answering (`POST /ask/`)
