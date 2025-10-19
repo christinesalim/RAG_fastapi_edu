@@ -34,16 +34,65 @@ User can now search/ask questions
 
 ## Setup
 
+### Prerequisites
+
+- Python 3.8+
+- PostgreSQL with pgvector extension (for full functionality)
+- OpenAI API key
+
+### Installation
+
 1. Install dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-2. Run the server:
+2. Configure environment variables in `.env`:
+
+```bash
+# Required for all features
+OPENAI_API_KEY=your_openai_api_key_here
+
+# Required for database features (file upload, RAG)
+POSTGRES_USERNAME=your_username
+POSTGRES_PASSWORD=your_password
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+DATABASE_NAME=fastapi_rag_db
+```
+
+3. Run the server:
 
 ```bash
 uvicorn main:app --reload
+```
+
+### Running Without PostgreSQL
+
+The application can run in **demo mode** without PostgreSQL. If database credentials are not provided:
+
+- ✅ Server starts successfully
+- ✅ Health check endpoint (`GET /`) works
+- ⚠️  Database features return `503` error with helpful message
+- ⚠️  File upload, RAG, and similarity search require PostgreSQL
+
+This is useful for:
+- Testing the application structure
+- Running in Educative or similar environments
+- Demonstrating the API without full database setup
+
+**Example output without database:**
+```bash
+⚠️  Database credentials not found. Running without database.
+INFO:     Started server process
+INFO:     Uvicorn running on http://127.0.0.1:8000
+```
+
+**API response without database:**
+```bash
+curl http://localhost:8000/
+# Response: {"message": "Database not available. Please configure PostgreSQL connection."}
 ```
 
 ## API Endpoints

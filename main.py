@@ -43,10 +43,14 @@ class AskModel(BaseModel):
 
 @app.get("/")
 async def root(db: Session = Depends(get_db)):
+    """List all uploaded files."""
+    if db is None:
+        return {"message": "Database not available. Please configure PostgreSQL connection."}
+
     # Query the database for all files
     files_query = select(File)
     files = db.scalars(files_query).all()
-    
+
     # Format and return the list of files
     files_list = [{"file_id": file.file_id, "file_name": file.file_name} for file in files]
     return files_list
@@ -59,6 +63,9 @@ async def upload_file(
     db: Session = Depends(get_db)
 ):
     """Upload a file to the sources directory for processing."""
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+
     if not file.filename:
         raise HTTPException(status_code=400, detail="No file provided")
     
@@ -145,6 +152,10 @@ async def get_similar_chunks(file_id: int, question: str, db: Session):
     
 @app.post("/find-similar-chunks/{file_id}")
 async def find_similar_chunks_endpoint(file_id: int, question_data: QuestionModel, db: Session = Depends(get_db)):
+    """Find semantically similar chunks from a file."""
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+
     try:
         similar_chunks = await get_similar_chunks(file_id, question_data.question, db)
 
@@ -168,7 +179,9 @@ def process_file_in_background(file_id: int, text: str):
 
 @app.post("/ask/")
 async def ask_question(request: AskModel, db: Session = Depends(get_db)):
-    """Answer a question using OpenAI's GPT model."""
+    """Answer a question using OpenAI's GPT model with RAG."""
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not available")
 
     try:
         similar_chunks = await get_similar_chunks(request.document_id, request.question, db)
