@@ -175,4 +175,17 @@ class ParserFactory:
 ParserFactory.register_parser('txt', TextParser)
 ParserFactory.register_parser('pdf', PdfParser)
 
+# FileParser class
+class FileParser:
+    def __init__(self, filepath: str):
+        self.filepath = filepath
+        self.parser = self._get_parser()
+        
+    def _get_parser(self) -> BaseParser:
+        extension = self.filepath.split('.')[-1]
+        return ParserFactory.get_parser(extension)
     
+    def parse(self) -> str:
+        if not os.path.exists(self.filepath):
+            raise FileNotFoundError(f"File not found: {self.filepath}")
+        return self.parser.parse(self.filepath)
